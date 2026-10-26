@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./tests/e2e',workers:1,timeout:30000,use:{baseURL:'http://localhost:4174',viewport:{width:1440,height:1000},trace:'retain-on-failure',screenshot:'only-on-failure'},webServer:{command:'node tests/start-server.js',url:'http://localhost:4174/api/meta',reuseExistingServer:false,timeout:30000},reporter:[['list'],['html',{open:'never'}]]});
