@@ -21,6 +21,7 @@ import { Loading, ErrorBox, Tags, Select, Modal } from "./ui";
 import { TermForm, GlossaryForm } from "./forms";
 import { Detail } from "./Detail";
 import { ImportForm } from "./Import";
+import { Opus } from "./Opus";
 import {
   languageName,
   type Meta,
@@ -92,9 +93,11 @@ function App() {
   useEffect(() => {
     document.title = id
       ? "Termo · Léxica"
-      : view === "glossaries"
-        ? "Glossários · Léxica"
-        : "Biblioteca · Léxica";
+      : view === "opus"
+        ? "Memórias OPUS · Léxica"
+        : view === "glossaries"
+          ? "Glossários · Léxica"
+          : "Biblioteca · Léxica";
   }, [id, view]);
   useEffect(() => {
     let active = true;
@@ -235,6 +238,13 @@ function App() {
             <BookOpen size={19} />
             Glossários por cliente
           </button>
+          <button
+            className={view === "opus" ? "nav-item active" : "nav-item"}
+            onClick={() => navigate(new URLSearchParams({ view: "opus" }))}
+          >
+            <BookOpen size={19} />
+            Memórias OPUS
+          </button>
           <button className="nav-item" onClick={() => setImporting(true)}>
             <Upload size={19} />
             Importar termos
@@ -267,7 +277,11 @@ function App() {
           <span>
             <span className="muted">Meu espaço</span>
             <span className="slash">/</span>
-            {view === "glossaries" ? "Glossários" : "Biblioteca por idioma"}
+            {view === "opus"
+              ? "Memórias OPUS"
+              : view === "glossaries"
+                ? "Glossários"
+                : "Biblioteca por idioma"}
           </span>
           <span className="local-badge">Dados neste computador</span>
         </header>
@@ -281,6 +295,8 @@ function App() {
               notify={notify}
               refresh={refresh}
             />
+          ) : view === "opus" ? (
+            <Opus />
           ) : view === "glossaries" ? (
             <>
               <div className="page-heading">

@@ -1361,3 +1361,70 @@ progress {
     border: 1px solid CanvasText;
   }
 }
+.opus-page {
+  display: grid;
+  gap: 24px;
+}
+.opus-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 24px;
+}
+.opus-section > p {
+  color: var(--muted);
+  margin: 12px 0 20px;
+}
+.opus-section form {
+  display: grid;
+  gap: 16px;
+}
+.opus-section form > button {
+  justify-self: start;
+}
+.opus-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.opus-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.opus-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.opus-row p {
+  margin: 8px 0;
+}
+.opus-row,
+.opus-suggestion {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.opus-suggestion {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.opus-suggestion p {
+  white-space: pre-wrap;
+  margin: 12px 0;
+}
+@media (max-width: 600px) {
+  .opus-fields {
+    grid-template-columns: 1fr;
+  }
+  .opus-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .opus-section {
+    padding: 16px;
+  }
+}

@@ -29,6 +29,13 @@ Abra **http://localhost:4173**. Em instalação nova são criados oito termos e 
 - Importação PDF textual/TXT/CSV com prévia, seleção dos termos, progresso, limites, duplicados e confirmação idempotente.
 - Backup SQLite consistente no início e a cada hora enquanto o servidor estiver ativo; `npm run backup` executa manualmente.
 - Adaptador de armazenamento temporário local ou S3, configuração MinIO e índice textual SQLite FTS5.
+- Catálogo OPUS ao vivo, links para consulta online e importação limitada de TMX/GZIP/ZIP com busca local de sugestões.
+
+## Memórias de tradução do OPUS
+
+Abra **Memórias OPUS** na navegação. A consulta ao catálogo precisa de internet e aceita um par de idiomas, uma coleção opcional (Europarl, MultiUN, DGT etc.) e a versão. Depois de escolher um dataset, importe no máximo 10.000 pares por padrão; o limite ajustável vai de 1 a 100.000. GZIP é processado em fluxo e o download para ao atingir o limite. O parser aceita TMX e ZIP contendo um único TMX. A tela mostra andamento, falhas e as memórias salvas no computador.
+
+As sugestões consultam as amostras importadas, sem enviar frases ao OPUS ou a um modelo de IA. A importação exige internet; a busca funciona offline. Para consultar sem importar, a tela oferece acesso às ferramentas online [OPUS Corpus Query](https://opus.nlpl.eu/bin/opuscqp.pl) e [OPUS Explorer](https://opus.nlpl.eu/explore/). A [API OPUS documentada](https://opus.nlpl.eu/opusapi) fornece catálogo, idiomas e endereços de download, e não uma API de busca por frases. Os corpora têm fontes e condições de uso variadas; confira licença e atribuição antes de usar sugestões em trabalho comercial. Uma amostra local não representa o conteúdo completo nem garante qualidade da tradução.
 
 ## Importação
 
@@ -53,7 +60,10 @@ Os testes E2E iniciam servidor e banco temporários próprios na porta 4174. Nã
 
 - `src/`: frontend React/TypeScript e componentes acessíveis compartilhados.
 - `server/`: API Express, validação Zod, SQLite, importação/exportação, backup e storage.
+- `server/opus-client.js`, `server/tmx.js`: consulta ao catálogo, download seguro e parser TMX em fluxo.
+- `server/translation-memory.js`: armazenamento, índice e consulta de sugestões locais.
 - `tests/`: domínio/API, PDF e fluxos E2E com Playwright/axe.
+- `tests/opus.test.js`: parser TMX, compressão, erros de rede, amostras, armazenamento e sugestões.
 - `docs/BACKLOG.md`: correspondência entre cada ticket e implementação.
 - `docs/ARCHITECTURE.md`: decisões de domínio, API e limites de implantação.
 - `infra/`: configuração opcional de bucket MinIO/S3.

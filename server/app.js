@@ -2,7 +2,13 @@ import express from "express";
 import { randomUUID } from "node:crypto";
 import { AppError, categories, tones, languages } from "./domain.js";
 import { exportTerms, extractTerms, auditReport } from "./files.js";
-export function createApp(store, storage) {
+import { TranslationMemory } from "./translation-memory.js";
+import { opusLinks } from "./opus-client.js";
+export function createApp(
+  store,
+  storage,
+  memory = new TranslationMemory(store),
+) {
   const app = express();
   app.disable("x-powered-by");
   const token = randomUUID();
@@ -99,6 +105,26 @@ export function createApp(store, storage) {
   app.post("/api/import/:id/commit", (req, res) =>
     res.json(store.commitImport(req.params.id, req.body.selected)),
   );
+  app.get("/api/opus/datasets", async (req, res) =>
+    res.json({
+      items: await memory.client.catalog(req.query),
+      links: opusLinks,
+    }),
+  );
+  app.get("/api/opus/imports", (req, res) =>
+    res.json({ items: memory.list(), links: opusLinks }),
+  );
+  app.post("/api/opus/imports", async (req, res) => {
+    const job = await memory.start(req.body);
+    res.status(job.status === "ready" ? 200 : 202).json(job);
+  });
+  app.get("/api/opus/imports/:id", (req, res) =>
+    res.json(memory.get(req.params.id)),
+  );
+  app.get("/api/translation-memory/suggestions", (req, res) =>
+    res.json({ items: memory.suggestions(req.query) }),
+  );
+  app.locals.translationMemory = memory;
   app.use("/api", (req, res) =>
     res.status(404).json({ error: "Endpoint não encontrado." }),
   );

@@ -20,6 +20,12 @@ Storage temporário local em `data/temporary` com nomes UUID não derivados de n
 
 CSV neutraliza prefixos de fórmulas e escapa aspas. TMX escapa XML. Referências externas só permitem HTTP/HTTPS ou DOI; links abrem com noopener/noreferrer. Conteúdo do usuário é texto React. Não há renderização de HTML arbitrário.
 
+## Memória de tradução OPUS
+
+O cliente consulta `https://opus.nlpl.eu/opusapi/` para descobrir corpora, versões, pares de idiomas e URLs TMX. Redirects e destinos de download aceitam somente HTTPS em `opus.nlpl.eu` e `object.pouta.csc.fi/OPUS-*`; a tela nunca envia URL arbitrária ao servidor. Download limitado a 1 GiB compactado, XML limitado a 4 GiB expandido. TMX é analisado em fluxo; o parser não resolve DTDs ou entidades externas. ZIP é processado sem extrair nomes de arquivo e deve conter exatamente um TMX. Unidades são salvas em lotes de 500; uma falha apaga os lotes parciais. Unidade máxima de 256 KiB; segmento máximo de 64 KiB; até cinco milhões de unidades e 64 variantes por unidade.
+
+A amostra é limitada por idioma, coleção, versão e limite escolhido. Padrão de 10.000 pares, máximo de 100.000. Estados persistidos: `importing`, `ready`, `failed`; importações interrompidas são removidas na inicialização. Só uma importação executa por vez. Dados e busca FTS5 residem no mesmo SQLite local e backup. Correspondências exatas vêm primeiro; busca semelhante usa FTS5 no idioma de origem. `coverage: sample` indica que o restante não foi baixado nem verificado. A ferramenta de consulta online do OPUS é um link externo; a API pública documentada não oferece endpoint de busca por frases. A licença varia entre corpora e deve ser conferida para uso comercial.
+
 ## API
 
 | Método | Rota | Comportamento |
@@ -35,6 +41,10 @@ CSV neutraliza prefixos de fórmulas e escapa aspas. TMX escapa XML. Referência
 | GET | `/api/export?format=csv ou tmx` | Exporta todos os resultados filtrados |
 | POST | `/api/import/preview` | `{filename,content:base64,context}` → pares e ID |
 | POST | `/api/import/:id/commit` | `{selected:[índices]}` → criados/ignorados |
+| GET | `/api/opus/datasets?source=en&target=pt&corpus=Europarl` | Lista corpora com TMX pela API oficial OPUS |
+| GET/POST | `/api/opus/imports` | Lista e importa amostras revalidadas no catálogo oficial |
+| GET | `/api/opus/imports/:id` | Estado e contagem de uma importação |
+| GET | `/api/translation-memory/suggestions?source=en&target=pt&q=...` | Busca exata e semelhante no SQLite local |
 
 Mutações exigem `X-Lexica-Token` obtido da própria página. Erros usam `{error,fields?}`; 422 validação, 409 duplicação/conflito, 410 prévia expirada. Busca aceita `q`, `glossaryId`, `project`, `work`, `sourceLang`, `targetLang`, `category`, `tones`, `tags`, `page`, `pageSize`, `sort`. Repetição de chave representa opções de um grupo.
 

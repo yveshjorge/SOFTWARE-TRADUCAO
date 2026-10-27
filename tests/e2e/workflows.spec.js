@@ -269,3 +269,95 @@ test("stale search responses do not replace current results", async ({
   await page.waitForTimeout(800);
   await expect(page.locator(".term-card")).toContainText("CRISPR");
 });
+
+test("OPUS catalog, bounded import, local suggestions and mobile layout", async ({
+  page,
+}) => {
+  const dataset = {
+    id: "a".repeat(64),
+    corpus: "Europarl",
+    version: "v8",
+    source: "en",
+    target: "pt",
+    estimatedPairs: 1958175,
+    downloadUrl:
+      "https://object.pouta.csc.fi/OPUS-Europarl/v8/tmx/en-pt.tmx.gz",
+  };
+  let imported = false;
+  await page.route("**/api/opus/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "GET" && request.url().includes("/datasets?"))
+      return route.fulfill({ json: { items: [dataset] } });
+    if (request.method() === "GET" && request.url().endsWith("/imports"))
+      return route.fulfill({
+        json: {
+          items: imported
+            ? [
+                {
+                  ...dataset,
+                  status: "ready",
+                  importedPairs: 2,
+                  coverage: "sample",
+                },
+              ]
+            : [],
+        },
+      });
+    if (request.method() === "POST" && request.url().endsWith("/imports")) {
+      imported = true;
+      expect(request.postDataJSON().maxPairs).toBe(10000);
+      return route.fulfill({
+        status: 202,
+        json: {
+          ...dataset,
+          id: "job-1",
+          status: "importing",
+          importedPairs: 0,
+        },
+      });
+    }
+    return route.fulfill({ status: 404, json: { error: "Unexpected route" } });
+  });
+  await page.route("**/api/translation-memory/suggestions?**", (route) =>
+    route.fulfill({
+      json: {
+        items: [
+          {
+            original: "Good morning",
+            translation: "Bom dia",
+            corpus: "Europarl",
+            version: "v8",
+            match: "exact",
+            sourceUrl: dataset.downloadUrl,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "Memórias OPUS" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Memórias do OPUS" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Buscar coleções disponíveis" })
+    .click();
+  await expect(
+    page.getByRole("button", { name: /Importar até 10\.000 pares/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: /Importar até 10\.000 pares/ })
+    .click();
+  await expect(page.getByText("Disponível offline")).toBeVisible();
+  await page.getByLabel("Trecho de origem").fill("Good morning");
+  await page.getByRole("button", { name: "Buscar sugestões locais" }).click();
+  await expect(page.getByText("Bom dia")).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.locator("body").evaluate((el) => el.scrollWidth),
+  ).resolves.toBeLessThanOrEqual(390);
+});

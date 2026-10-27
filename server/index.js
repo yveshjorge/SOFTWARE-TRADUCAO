@@ -51,7 +51,8 @@ const server = app.listen(Number(process.env.PORT) || 4173, "127.0.0.1", () =>
 for (const sig of ["SIGINT", "SIGTERM"])
   process.on(sig, () => {
     clearInterval(timer);
-    server.close(() => {
+    server.close(async () => {
+      await app.locals.translationMemory.running;
       store.close();
       process.exit(0);
     });
