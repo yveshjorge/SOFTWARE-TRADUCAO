@@ -1,6 +1,6 @@
 # SOFTWARE-TRADUCAO — Léxica
 
-Aplicação local completa de biblioteca de termos para tradutores, construída a partir dos **35 itens em To Do** do [quadro BM no Jira](https://metodosageis06.atlassian.net/jira/software/projects/BM/boards/1) e do [canvas Tradução no Miro](https://miro.com/app/board/uXjVHwyuvsA=/).
+
 
 ## Executar
 
@@ -68,4 +68,4 @@ Os testes E2E iniciam servidor e banco temporários próprios na porta 4174. Nã
 - `docs/ARCHITECTURE.md`: decisões de domínio, API e limites de implantação.
 - `infra/`: configuração opcional de bucket MinIO/S3.
 
-Código-fonte no repositório [SOFTWARE-TRADUCAO](https://github.com/yveshjorge/SOFTWARE-TRADUCAO). A aplicação é executada localmente; a publicação do código não disponibiliza um servidor na internet. Os status do Jira permanecem inalterados para revisão humana da entrega.
+Código-fonte no repositório [SOFTWARE-TRADUCAO](https://github.com/yveshjorge/SOFTWARE-TRADUCAO). A aplicação é executada localmente; a publicação do código não disponibiliza um servidor na internet. 
