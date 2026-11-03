@@ -1,7 +1,5 @@
 # SOFTWARE-TRADUCAO — Léxica
 
-
-
 ## Executar
 
 Requisito: **Node.js 24 ou superior**, npm e Git. Não exige chave de IA ou conta de nuvem.
@@ -68,4 +66,4 @@ Os testes E2E iniciam servidor e banco temporários próprios na porta 4174. Nã
 - `docs/ARCHITECTURE.md`: decisões de domínio, API e limites de implantação.
 - `infra/`: configuração opcional de bucket MinIO/S3.
 
-Código-fonte no repositório [SOFTWARE-TRADUCAO](https://github.com/yveshjorge/SOFTWARE-TRADUCAO). A aplicação é executada localmente; a publicação do código não disponibiliza um servidor na internet. 
+Código-fonte no repositório [SOFTWARE-TRADUCAO](https://github.com/yveshjorge/SOFTWARE-TRADUCAO). A aplicação é executada localmente; a publicação do código não disponibiliza um servidor na internet.
