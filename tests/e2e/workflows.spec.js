@@ -298,6 +298,7 @@ test("OPUS catalog, bounded import, local suggestions and mobile layout", async 
                   status: "ready",
                   importedPairs: 2,
                   coverage: "sample",
+                  sampleMethod: "beginning",
                 },
               ]
             : [],
@@ -334,6 +335,32 @@ test("OPUS catalog, bounded import, local suggestions and mobile layout", async 
       },
     }),
   );
+  await page.route(
+    "**/api/translation-memory/suggestions/batch",
+    async (route) => {
+      const body = route.request().postDataJSON();
+      expect(body.segments).toEqual(["Good morning.", "Health care?"]);
+      return route.fulfill({
+        json: {
+          items: body.segments.map((segment) => ({
+            segment,
+            suggestions: [
+              {
+                original: segment,
+                translation: "Tradução sugerida",
+                corpus: "Europarl",
+                version: "v8",
+                match: "exact",
+                sourceUrl: dataset.downloadUrl,
+                coverage: "sample",
+                sampleMethod: "beginning",
+              },
+            ],
+          })),
+        },
+      });
+    },
+  );
   await page.goto("/");
   await page.getByRole("button", { name: "Memórias OPUS" }).click();
   await expect(
@@ -352,6 +379,15 @@ test("OPUS catalog, bounded import, local suggestions and mobile layout", async 
   await page.getByLabel("Trecho de origem").fill("Good morning");
   await page.getByRole("button", { name: "Buscar sugestões locais" }).click();
   await expect(page.getByText("Bom dia")).toBeVisible();
+  await expect(page.getByText("Amostra do início do arquivo")).toBeVisible();
+  await page
+    .getByLabel("Texto para revisar")
+    .fill("Good morning.\nHealth care?");
+  await page
+    .getByRole("button", { name: "Revisar com sugestões locais" })
+    .click();
+  await expect(page.getByText("Tradução sugerida")).toHaveCount(2);
+  await expect(page.getByText("amostra do início").first()).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();

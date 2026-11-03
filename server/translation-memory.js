@@ -26,6 +26,15 @@ export class TranslationMemory {
         JSON.parse(row.data),
         "Importação interrompida pelo encerramento do servidor. Tente novamente.",
       );
+    // Older imports already stopped after N pairs; they sampled from the file
+    // start but did not persist that provenance explicitly.
+    for (const row of this.db
+      .prepare("SELECT data FROM tm_datasets WHERE status='ready'")
+      .all()) {
+      const dataset = JSON.parse(row.data);
+      if (dataset.coverage === "sample" && !dataset.sampleMethod)
+        this.save({ ...dataset, sampleMethod: "beginning" });
+    }
   }
   list() {
     return this.db
@@ -150,6 +159,7 @@ export class TranslationMemory {
         status: "ready",
         completedAt: new Date().toISOString(),
         coverage: job.stats.limited ? "sample" : "complete",
+        sampleMethod: job.stats.limited ? "beginning" : null,
       });
     } catch (error) {
       this.fail(
@@ -216,7 +226,40 @@ export class TranslationMemory {
         datasetId: d.id,
         sourceUrl: d.downloadUrl,
         coverage: d.coverage,
+        sampleMethod: d.sampleMethod,
       };
+    });
+  }
+  suggestionsBatch(input) {
+    if (!input || typeof input !== "object" || Array.isArray(input))
+      throw new AppError("Informe os trechos e o par de idiomas.", 422);
+    const source = language(input.source);
+    const target = language(input.target);
+    const { segments, corpus } = input;
+    if (
+      !Array.isArray(segments) ||
+      segments.length < 1 ||
+      segments.length > 30 ||
+      segments.some(
+        (s) => typeof s !== "string" || !s.trim() || s.length > 2000,
+      ) ||
+      segments.reduce((sum, s) => sum + s.length, 0) > 20000 ||
+      (corpus !== undefined &&
+        (typeof corpus !== "string" || corpus.length > 100))
+    )
+      throw new AppError(
+        "Envie de 1 a 30 trechos, cada um com até 2.000 caracteres e total de até 20.000.",
+        422,
+      );
+    const cache = new Map();
+    return segments.map((segment) => {
+      const key = fold(segment.trim());
+      if (!cache.has(key))
+        cache.set(
+          key,
+          this.suggestions({ source, target, corpus, q: segment, limit: 5 }),
+        );
+      return { segment, suggestions: cache.get(key) };
     });
   }
 }

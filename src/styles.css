@@ -1416,6 +1416,13 @@ progress {
   white-space: pre-wrap;
   margin: 12px 0;
 }
+.opus-match {
+  border-top: 1px solid var(--line);
+  padding: 16px 0 0;
+}
+.opus-match p {
+  margin: 10px 0;
+}
 @media (max-width: 600px) {
   .opus-fields {
     grid-template-columns: 1fr;

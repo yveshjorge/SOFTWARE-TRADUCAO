@@ -6,8 +6,8 @@ Executada em 27/10/2026, Windows, Node 24.22.0. A validação OPUS usou somente 
 |---|---|
 | TypeScript (`npm run check`) | Passou |
 | Build Vite (`npm run build`) | Passou |
-| Testes de domínio/API/design e OPUS (`npm test`) | 31 passaram |
-| Playwright (`npm run test:e2e`) | 10 passaram; navegação, amostra e busca local OPUS também verificadas |
+| Testes de domínio/API/design e OPUS (`npm test`) | 33 passaram |
+| Playwright (`npm run test:e2e`) | 10 passaram; texto dividido por frase, revisão e atribuição das sugestões OPUS verificados |
 | Axe WCAG A/AA nos estados cobertos | Zero violações detectadas |
 | Auditoria estática premium strict | Zero erros/avisos |
 | Lint DESIGN.md | Zero erros; 7 avisos de tokens documentados em prosa, consumidos em CSS |
@@ -20,7 +20,7 @@ Criação e edição de termo com histórico anterior preservado; consulta e dow
 
 No navegador: CRUD, histórico, notas, link de referência, variantes, upload TXT com revisão e desmarcação, rejeição de executável, validação de formulário, foco, Escape e Cancelar com rascunho, preservação após falha de rede, respostas de busca atrasadas, URL/Back/reload, layout sem overflow em 1440×1000 e 390×844 e reduced-motion. Axe avaliado na biblioteca desktop e no formulário mobile.
 
-Para OPUS: fixtures TMX em UTF-8/UTF-16, variantes regionais, sentido invertido, escapes, inline tags, conteúdo truncado, DTD, entidades externas, limites de tamanho, GZIP/ZIP e checksums inválidos; catálogo/API offline, revalidação, falhas de rede, busca exata/semelhante, falha depois de lotes parciais, retomada idempotente, estado interrompido e rotas HTTP protegidas. E2E com respostas de catálogo/importação/sugestões simuladas verifica o fluxo visual sem baixar uma coleção inteira.
+Para OPUS: fixtures TMX em UTF-8/UTF-16, variantes regionais, sentido invertido, escapes, inline tags, conteúdo truncado, DTD, entidades externas, limites de tamanho, GZIP/ZIP e checksums inválidos; catálogo/API offline, revalidação, falhas de rede, busca exata/semelhante e em lote, falha depois de lotes parciais, retomada idempotente, migração de amostras anteriores para exibir procedência, estado interrompido e rotas HTTP protegidas. E2E com respostas de catálogo/importação/sugestões simuladas verifica o fluxo de revisão por frase sem baixar uma coleção inteira.
 
 Os testes usam banco temporário separado e não alteram `data/lexica.sqlite`. Capturas em `desktop.png` e `mobile-form.png` mostram dados do ambiente de testes. `preview.png` mostra a biblioteca local de demonstração.
 

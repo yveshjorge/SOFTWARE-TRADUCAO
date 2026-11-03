@@ -228,6 +228,7 @@ test("limited imports are searchable, attributed, offline and idempotent", async
   const ready = memory.get(job.id);
   assert.equal(ready.status, "ready");
   assert.equal(ready.coverage, "sample");
+  assert.equal(ready.sampleMethod, "beginning");
   assert.equal(ready.importedPairs, 1);
   const match = memory.suggestions({
     source: "en",
@@ -248,6 +249,50 @@ test("limited imports are searchable, attributed, offline and idempotent", async
   );
   assert.equal((await memory.start({ ...input, maxPairs: 1 })).id, job.id);
   assert.equal(store.db.prepare("SELECT count(*) n FROM tm_units").get().n, 1);
+});
+test("batch suggestions preserve segments, cache duplicates and enforce text limits", async (t) => {
+  const { memory, input } = await setup(t);
+  await memory.start(input);
+  await memory.running;
+  const rows = memory.suggestionsBatch({
+    source: "en",
+    target: "pt",
+    corpus: "Europarl",
+    segments: ["Good morning", "Health & care", "Good morning"],
+  });
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].suggestions[0].translation, "Bom dia");
+  assert.equal(rows[1].suggestions[0].translation, "Saúde & cuidados");
+  assert.deepEqual(rows[2], rows[0]);
+  assert.throws(
+    () =>
+      memory.suggestionsBatch({
+        source: "en",
+        target: "pt",
+        segments: Array(31).fill("x"),
+      }),
+    /30 trechos/,
+  );
+  assert.throws(() => memory.suggestionsBatch(null), /trechos/);
+  assert.throws(
+    () =>
+      memory.suggestionsBatch({
+        source: "en",
+        target: "pt",
+        segments: ["x".repeat(2001)],
+      }),
+    /30 trechos/,
+  );
+});
+test("migration labels previously saved prefix samples explicitly", async (t) => {
+  const { store, memory, input } = await setup(t);
+  const job = await memory.start({ ...input, maxPairs: 1 });
+  await memory.running;
+  const legacy = memory.get(job.id);
+  delete legacy.sampleMethod;
+  memory.save(legacy);
+  const migrated = new TranslationMemory(store, fakeClient());
+  assert.equal(migrated.get(job.id).sampleMethod, "beginning");
 });
 test("corruption after a committed batch removes every partial pair and permits retry", async (t) => {
   const xml = tmx(
@@ -348,6 +393,29 @@ test("HTTP routes protect import, reject arbitrary URLs and expose catalog, jobs
         )
       ).json()
     ).items[0].translation,
+    "Saúde & cuidados",
+  );
+  const invalidBatch = await fetch(
+    base + "/api/translation-memory/suggestions/batch",
+    { method: "POST", headers, body: JSON.stringify({}) },
+  );
+  assert.equal(invalidBatch.status, 422);
+  const batch = await fetch(
+    base + "/api/translation-memory/suggestions/batch",
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        source: "en",
+        target: "pt",
+        corpus: "Europarl",
+        segments: ["Good morning", "Health & care"],
+      }),
+    },
+  );
+  assert.equal(batch.status, 200);
+  assert.equal(
+    (await batch.json()).items[1].suggestions[0].translation,
     "Saúde & cuidados",
   );
 });

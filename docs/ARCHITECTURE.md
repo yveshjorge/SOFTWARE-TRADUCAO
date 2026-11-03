@@ -24,7 +24,7 @@ CSV neutraliza prefixos de fórmulas e escapa aspas. TMX escapa XML. Referência
 
 O cliente consulta `https://opus.nlpl.eu/opusapi/` para descobrir corpora, versões, pares de idiomas e URLs TMX. Redirects e destinos de download aceitam somente HTTPS em `opus.nlpl.eu` e `object.pouta.csc.fi/OPUS-*`; a tela nunca envia URL arbitrária ao servidor. Download limitado a 1 GiB compactado, XML limitado a 4 GiB expandido. TMX é analisado em fluxo; o parser não resolve DTDs ou entidades externas. ZIP é processado sem extrair nomes de arquivo e deve conter exatamente um TMX. Unidades são salvas em lotes de 500; uma falha apaga os lotes parciais. Unidade máxima de 256 KiB; segmento máximo de 64 KiB; até cinco milhões de unidades e 64 variantes por unidade.
 
-A amostra é limitada por idioma, coleção, versão e limite escolhido. Padrão de 10.000 pares, máximo de 100.000. Estados persistidos: `importing`, `ready`, `failed`; importações interrompidas são removidas na inicialização. Só uma importação executa por vez. Dados e busca FTS5 residem no mesmo SQLite local e backup. Correspondências exatas vêm primeiro; busca semelhante usa FTS5 no idioma de origem. `coverage: sample` indica que o restante não foi baixado nem verificado. A ferramenta de consulta online do OPUS é um link externo; a API pública documentada não oferece endpoint de busca por frases. A licença varia entre corpora e deve ser conferida para uso comercial.
+A amostra é limitada por idioma, coleção, versão e limite escolhido. Padrão de 10.000 pares, máximo de 100.000; ao atingir o limite, ela inclui os primeiros pares do TMX, identificados por `coverage: sample` e `sampleMethod: beginning`. Estados persistidos: `importing`, `ready`, `failed`; importações interrompidas são removidas na inicialização. Só uma importação executa por vez. Dados e busca FTS5 residem no mesmo SQLite local e backup. Correspondências exatas vêm primeiro; busca semelhante usa FTS5 no idioma de origem. `POST /api/translation-memory/suggestions/batch` recebe até 30 segmentos (20 mil caracteres no total), preserva os segmentos e devolve as sugestões locais de cada um. A interface divide texto por frases, pede as correspondências uma vez e só copia uma sugestão sob ação explícita do usuário. Nenhum trecho é enviado para a API OPUS. A ferramenta de consulta online do OPUS é um link externo; a API pública documentada não oferece endpoint de busca por frases. A licença varia entre corpora e deve ser conferida para uso comercial.
 
 ## API
 
@@ -45,6 +45,7 @@ A amostra é limitada por idioma, coleção, versão e limite escolhido. Padrão
 | GET/POST | `/api/opus/imports` | Lista e importa amostras revalidadas no catálogo oficial |
 | GET | `/api/opus/imports/:id` | Estado e contagem de uma importação |
 | GET | `/api/translation-memory/suggestions?source=en&target=pt&q=...` | Busca exata e semelhante no SQLite local |
+| POST | `/api/translation-memory/suggestions/batch` | `{source,target,corpus?,segments:[...]}` → sugestões locais por segmento |
 
 Mutações exigem `X-Lexica-Token` obtido da própria página. Erros usam `{error,fields?}`; 422 validação, 409 duplicação/conflito, 410 prévia expirada. Busca aceita `q`, `glossaryId`, `project`, `work`, `sourceLang`, `targetLang`, `category`, `tones`, `tags`, `page`, `pageSize`, `sort`. Repetição de chave representa opções de um grupo.
 

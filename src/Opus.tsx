@@ -16,6 +16,7 @@ type Job = Dataset & {
   importedPairs: number;
   maxPairs: number;
   coverage?: string;
+  sampleMethod?: string | null;
   error?: string;
 };
 type Suggestion = {
@@ -25,7 +26,11 @@ type Suggestion = {
   version: string;
   match: string;
   sourceUrl: string;
+  datasetId: string;
+  coverage?: string;
+  sampleMethod?: string;
 };
+type SegmentResult = { segment: string; suggestions: Suggestion[] };
 export function Opus() {
   const [source, setSource] = useState("en"),
     [target, setTarget] = useState("pt");
@@ -35,6 +40,10 @@ export function Opus() {
     [jobs, setJobs] = useState<Job[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]),
     [q, setQ] = useState("");
+  const [draft, setDraft] = useState("");
+  const [draftResults, setDraftResults] = useState<SegmentResult[]>([]);
+  const [draftError, setDraftError] = useState(""),
+    [draftNotice, setDraftNotice] = useState("");
   const [catalogError, setCatalogError] = useState(""),
     [searchError, setSearchError] = useState(""),
     [importError, setImportError] = useState(""),
@@ -120,6 +129,66 @@ export function Opus() {
       setBusy(false);
     }
   }
+  async function reviewText() {
+    setDraftError("");
+    setDraftNotice("");
+    setDraftResults([]);
+    const lines = draft
+      .split(/\n+/u)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    let segments: string[];
+    try {
+      segments = lines.flatMap((line) =>
+        Array.from(
+          new Intl.Segmenter(source, { granularity: "sentence" }).segment(line),
+          (part) => part.segment.trim(),
+        ).filter(Boolean),
+      );
+    } catch {
+      // Fall back to one paragraph per line in browsers with no Segmenter locale.
+      segments = lines;
+    }
+    if (!segments.length) {
+      setDraftError("Cole pelo menos uma frase para revisar.");
+      return;
+    }
+    if (segments.length > 30) {
+      setDraftError(
+        `O texto gerou ${segments.length} trechos. Revise até 30 por vez.`,
+      );
+      return;
+    }
+    if (segments.some((part) => part.length > 2000)) {
+      setDraftError(
+        "Uma frase ultrapassa 2.000 caracteres. Divida-a antes da busca.",
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await api<{ items: SegmentResult[] }>(
+        "/translation-memory/suggestions/batch",
+        { source, target, corpus, segments },
+      );
+      setDraftResults(response.items);
+    } catch (e) {
+      setDraftError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function copyTranslation(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setDraftError("");
+      setDraftNotice("Sugestão copiada para a área de transferência.");
+    } catch {
+      setDraftError(
+        "Não foi possível copiar automaticamente. Selecione e copie a sugestão.",
+      );
+    }
+  }
   return (
     <div className="opus-page">
       <div className="page-heading">
@@ -157,8 +226,9 @@ export function Opus() {
       <section className="opus-section" aria-labelledby="opus-catalog">
         <h2 id="opus-catalog">Preparar uma amostra local</h2>
         <p>
-          Por padrão, até 10.000 pares. A amostra funciona sem internet após a
-          importação. A disponibilidade e a licença variam por coleção.
+          Por padrão, até 10.000 pares do início do arquivo. A amostra funciona
+          sem internet após a importação. A disponibilidade e a licença variam
+          por coleção; confira as condições da coleção antes de usar.
         </p>
         <form
           noValidate
@@ -272,7 +342,7 @@ export function Opus() {
                     ? `Importando: ${j.importedPairs.toLocaleString("pt-BR")} pares salvos…`
                     : j.status === "failed"
                       ? j.error
-                      : `${j.importedPairs.toLocaleString("pt-BR")} pares disponíveis · ${j.coverage === "sample" ? "Amostra limitada" : "Arquivo completo"}`}
+                      : `${j.importedPairs.toLocaleString("pt-BR")} pares disponíveis · ${j.sampleMethod === "beginning" ? "Amostra do início do arquivo" : j.coverage === "sample" ? "Amostra limitada" : "Arquivo completo"}`}
                 </p>
                 {j.status === "failed" && (
                   <small>
@@ -287,6 +357,100 @@ export function Opus() {
                     ? "Falhou"
                     : "Em andamento"}
               </span>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="opus-section" aria-labelledby="opus-workbench">
+        <h2 id="opus-workbench">Revisar um texto com as memórias locais</h2>
+        <p>
+          Cole o texto para procurar correspondências por frase. A busca fica
+          neste computador; cada resultado mostra a coleção e a origem para
+          conferência. Você decide se quer copiar uma sugestão.
+        </p>
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!e.currentTarget.reportValidity()) return;
+            void reviewText();
+          }}
+        >
+          <Textarea
+            className="resize-none"
+            label="Texto para revisar"
+            rows={8}
+            value={draft}
+            maxLength={20000}
+            required
+            disabled={busy}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setDraftResults([]);
+              setDraftError("");
+              setDraftNotice("");
+            }}
+          />
+          <small className="hint">
+            Até 20 mil caracteres e 30 frases por busca. A análise separa as
+            frases para compará-las com a amostra escolhida.
+          </small>
+          <button className="primary" disabled={busy || !draft.trim()}>
+            Revisar com sugestões locais
+          </button>
+        </form>
+        <ErrorBox message={draftError} />
+        {draftNotice && (
+          <p className="hint" role="status">
+            {draftNotice}
+          </p>
+        )}
+        <div className="opus-list" aria-live="polite">
+          {draftResults.map(({ segment, suggestions: matches }, index) => (
+            <article className="opus-suggestion" key={index}>
+              <span className="eyebrow">Trecho {index + 1}</span>
+              <p>{segment}</p>
+              {matches.length ? (
+                matches.map((match, matchIndex) => (
+                  <div
+                    className="opus-match"
+                    key={match.datasetId + matchIndex}
+                  >
+                    <span className="eyebrow">
+                      {match.corpus} · {match.version} ·{" "}
+                      {match.match === "exact"
+                        ? "Correspondência exata"
+                        : "Trecho relacionado"}
+                      {match.sampleMethod === "beginning"
+                        ? " · amostra do início"
+                        : ""}
+                    </span>
+                    <p>{match.original}</p>
+                    <p>
+                      <strong>{match.translation}</strong>
+                    </p>
+                    <div className="actions">
+                      <button
+                        type="button"
+                        onClick={() => void copyTranslation(match.translation)}
+                      >
+                        Copiar sugestão
+                      </button>
+                      <a
+                        href={match.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Ver fonte TMX ↗
+                      </a>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="muted">
+                  Sem correspondência na amostra escolhida.
+                </p>
+              )}
             </article>
           ))}
         </div>
@@ -338,6 +502,7 @@ export function Opus() {
                 {s.match === "exact"
                   ? "Correspondência exata"
                   : "Trecho relacionado"}
+                {s.sampleMethod === "beginning" ? " · amostra do início" : ""}
               </span>
               <p>{s.original}</p>
               <p>

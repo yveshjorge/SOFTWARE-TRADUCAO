@@ -124,6 +124,9 @@ export function createApp(
   app.get("/api/translation-memory/suggestions", (req, res) =>
     res.json({ items: memory.suggestions(req.query) }),
   );
+  app.post("/api/translation-memory/suggestions/batch", (req, res) =>
+    res.json({ items: memory.suggestionsBatch(req.body) }),
+  );
   app.locals.translationMemory = memory;
   app.use("/api", (req, res) =>
     res.status(404).json({ error: "Endpoint não encontrado." }),
