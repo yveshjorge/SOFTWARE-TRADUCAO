@@ -63,6 +63,7 @@ Os testes E2E iniciam servidor e banco temporários próprios na porta 4174. Nã
 - `tests/`: domínio/API, PDF e fluxos E2E com Playwright/axe.
 - `tests/opus.test.js`: parser TMX, compressão, erros de rede, amostras, armazenamento e sugestões.
 - `docs/BACKLOG.md`: correspondência entre cada ticket e implementação.
+- `docs/MVP_REVISADO.md`: proposta revisada do MVP, jornada, metas de validação, planejamento de sprints e modelo de métricas para copiar ao Confluence/Miro.
 - `docs/ARCHITECTURE.md`: decisões de domínio, API e limites de implantação.
 - `infra/`: configuração opcional de bucket MinIO/S3.
 
